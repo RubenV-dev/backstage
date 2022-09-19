@@ -17,11 +17,15 @@
 import { createRouter } from '@backstage/plugin-permission-backend';
 import {
   AuthorizeResult,
+  isPermission,
   PolicyDecision,
 } from '@backstage/plugin-permission-common';
-import { PermissionPolicy } from '@backstage/plugin-permission-node';
+import { PermissionPolicy, PolicyQuery } from '@backstage/plugin-permission-node';
 import { Router } from 'express';
+import { BackstageIdentityResponse } from '../../../../plugins/auth-node/src';
+import { catalogEntityDeletePermission } from '../../../../plugins/catalog-common/src';
 import { PluginEnvironment } from '../types';
+import { catalogConditions, createCatalogConditionalDecision } from '../../../../plugins/catalog-backend/src/permissions/conditionExports';
 
 class AllowAllPermissionPolicy implements PermissionPolicy {
   async handle(): Promise<PolicyDecision> {
@@ -31,6 +35,25 @@ class AllowAllPermissionPolicy implements PermissionPolicy {
   }
 }
 
+class DenyAllCatalogEntityDeleteExceptOwnerPermissionPolicy implements PermissionPolicy {
+  async handle(
+      request: PolicyQuery,
+      user?: BackstageIdentityResponse)
+      : Promise<PolicyDecision> {
+          if (isPermission(request.permission, catalogEntityDeletePermission)) {
+
+              return createCatalogConditionalDecision(
+                  request.permission,
+                  catalogConditions.isEntityOwner(
+                  user?.identity.ownershipEntityRefs ?? [],
+                  ),
+              );
+          }
+          return { result: AuthorizeResult.ALLOW};
+      }
+}
+
+
 export default async function createPlugin(
   env: PluginEnvironment,
 ): Promise<Router> {
@@ -38,7 +61,7 @@ export default async function createPlugin(
     config: env.config,
     logger: env.logger,
     discovery: env.discovery,
-    policy: new AllowAllPermissionPolicy(),
+    policy: new DenyAllCatalogEntityDeleteExceptOwnerPermissionPolicy(),
     identity: env.identity,
   });
 }
