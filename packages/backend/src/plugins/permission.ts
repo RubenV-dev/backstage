@@ -26,6 +26,7 @@ import { BackstageIdentityResponse } from '../../../../plugins/auth-node/src';
 import { catalogEntityDeletePermission } from '../../../../plugins/catalog-common/src';
 import { PluginEnvironment } from '../types';
 import { catalogConditions, createCatalogConditionalDecision } from '../../../../plugins/catalog-backend/src/permissions/conditionExports';
+import { clustersReadPermission } from '../../../../plugins/kubernetes-backend/src/permissions/permissions';
 
 class AllowAllPermissionPolicy implements PermissionPolicy {
   async handle(): Promise<PolicyDecision> {
@@ -53,6 +54,15 @@ class DenyAllCatalogEntityDeleteExceptOwnerPermissionPolicy implements Permissio
       }
 }
 
+class DenyAllClusterEndpointCall implements PermissionPolicy {
+  async handle(request: PolicyQuery): Promise<PolicyDecision> {
+        if (isPermission(request.permission, clustersReadPermission)) {
+            return { result: AuthorizeResult.DENY}
+        }
+        return { result: AuthorizeResult.ALLOW};
+    }
+}
+
 
 export default async function createPlugin(
   env: PluginEnvironment,
@@ -61,7 +71,7 @@ export default async function createPlugin(
     config: env.config,
     logger: env.logger,
     discovery: env.discovery,
-    policy: new DenyAllCatalogEntityDeleteExceptOwnerPermissionPolicy(),
+    policy: new DenyAllClusterEndpointCall(),
     identity: env.identity,
   });
 }
