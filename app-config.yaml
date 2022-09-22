@@ -157,7 +157,12 @@ kubernetes:
     type: 'multiTenant'
   clusterLocatorMethods:
     - type: 'config'
-      clusters: []
+      clusters:
+        - url: https://${KUBERNETES_SERVICE_HOST}:${KUBERNETES_SERVICE_PORT}
+          name: kind
+          authProvider: 'serviceAccount'
+          skipTLSVerify: true
+          serviceAccountToken: ${KUBERNETES_SERVICE_TOKEN}
 
 kafka:
   clientId: backstage
