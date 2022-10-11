@@ -162,6 +162,7 @@ kubernetes:
           name: kind
           authProvider: 'serviceAccount'
           skipTLSVerify: true
+          skipMetricsLookup: true
           serviceAccountToken: ${KUBERNETES_SERVICE_TOKEN}
 
 kafka:
