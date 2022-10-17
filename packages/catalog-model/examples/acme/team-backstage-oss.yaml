@@ -1,0 +1,23 @@
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+ name: backstage-oss
+ description: Team backstage-oss
+spec:
+ type: team
+ profile:
+   # Intentional no displayName for testing
+   email: team-backstage-oss@example.com
+   picture: https://avatars.dicebear.com/api/identicon/team-a@example.com.svg?background=%23fff&margin=25
+ children: []
+---
+apiVersion: backstage.io/v1alpha1
+kind: User
+metadata:
+ name: rubenv-dev
+spec:
+ profile:
+   # Intentional no displayName for testing
+   email: rvallejony@vmware.com
+   picture: https://avatars.dicebear.com/api/avataaars/breanna-davison@example.com.svg?background=%23fff
+ memberOf: [backstage-oss]

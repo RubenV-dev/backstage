@@ -58,6 +58,13 @@ export default async function createPlugin(
               namespace: DEFAULT_NAMESPACE,
             });
 
+            console.log(ctx.issueToken({
+              claims: {
+                sub: userEntityRef,
+                ent: [userEntityRef],
+              },
+            }));
+
             return ctx.issueToken({
               claims: {
                 sub: userEntityRef,
