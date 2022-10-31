@@ -14,22 +14,40 @@
  * limitations under the License.
  */
 
+import { BackstageIdentityResponse } from '@backstage/plugin-auth-node';
 import { createRouter } from '@backstage/plugin-permission-backend';
 import {
   AuthorizeResult,
   isPermission,
   PolicyDecision,
 } from '@backstage/plugin-permission-common';
-import { PermissionPolicy, PolicyQuery } from '@backstage/plugin-permission-node';
+import {
+  PermissionPolicy,
+  PolicyQuery,
+} from '@backstage/plugin-permission-node';
+import {
+  DefaultPlaylistPermissionPolicy,
+  isPlaylistPermission,
+} from '@backstage/plugin-playlist-backend';
 import { Router } from 'express';
-import { BackstageIdentityResponse } from '../../../../plugins/auth-node/src';
 import { catalogEntityDeletePermission } from '../../../../plugins/catalog-common/src';
 import { PluginEnvironment } from '../types';
 import { catalogConditions, createCatalogConditionalDecision } from '../../../../plugins/catalog-backend/src/permissions/conditionExports';
-import { clustersReadPermission } from '../../../../plugins/kubernetes-backend/src/permissions/permissions';
+import { kubernetesClusterReadPermission, kubernetesWorkloadResourcesReadPermission,
+  kubernetesCustomResourcesReadPermission } from '@backstage/plugin-kubernetes-common';
+import { kubernetesConditions, createKubernetesConditionalDecision } from '../../../../plugins/kubernetes-backend/src/permissions/conditionExports';
 
-class AllowAllPermissionPolicy implements PermissionPolicy {
-  async handle(): Promise<PolicyDecision> {
+class ExamplePermissionPolicy implements PermissionPolicy {
+  private playlistPermissionPolicy = new DefaultPlaylistPermissionPolicy();
+
+  async handle(
+    request: PolicyQuery,
+    user?: BackstageIdentityResponse,
+  ): Promise<PolicyDecision> {
+    if (isPlaylistPermission(request.permission)) {
+      return this.playlistPermissionPolicy.handle(request, user);
+    }
+
     return {
       result: AuthorizeResult.ALLOW,
     };
@@ -46,7 +64,7 @@ class DenyAllCatalogEntityDeleteExceptOwnerPermissionPolicy implements Permissio
               return createCatalogConditionalDecision(
                   request.permission,
                   catalogConditions.isEntityOwner(
-                  user?.identity.ownershipEntityRefs ?? [],
+                  { claims: user?.identity.ownershipEntityRefs ?? [] },
                   ),
               );
           }
@@ -54,13 +72,45 @@ class DenyAllCatalogEntityDeleteExceptOwnerPermissionPolicy implements Permissio
       }
 }
 
-class DenyAllClusterEndpointCall implements PermissionPolicy {
+class DenyAllKubernetesClusterRead implements PermissionPolicy {
   async handle(request: PolicyQuery): Promise<PolicyDecision> {
-        if (isPermission(request.permission, clustersReadPermission)) {
+        if (isPermission(request.permission, kubernetesClusterReadPermission)) {
             return { result: AuthorizeResult.DENY}
         }
         return { result: AuthorizeResult.ALLOW};
     }
+}
+
+class DenyKubernetesResourceReadExceptOwnerPermissionPolicy implements PermissionPolicy{
+  async handle(
+    request: PolicyQuery,
+    user?: BackstageIdentityResponse)
+    : Promise<PolicyDecision> {
+        if (isPermission(request.permission, kubernetesWorkloadResourcesReadPermission)) {
+
+            return createKubernetesConditionalDecision(
+                request.permission,
+                kubernetesConditions.isEntityOwner(
+                user?.identity.ownershipEntityRefs ?? [],
+                ),
+            );
+        }
+        return { result: AuthorizeResult.ALLOW};
+    }
+}
+
+class K8sPermissionPolicy implements PermissionPolicy {
+  async handle(
+    request: PolicyQuery
+  ): Promise<PolicyDecision> {
+    if (isPermission(request.permission, kubernetesCustomResourcesReadPermission) || isPermission(request.permission, kubernetesWorkloadResourcesReadPermission)) {
+      return {
+        result: AuthorizeResult.DENY,
+      };
+    }
+
+    return { result: AuthorizeResult.ALLOW };
+  }
 }
 
 
@@ -71,7 +121,7 @@ export default async function createPlugin(
     config: env.config,
     logger: env.logger,
     discovery: env.discovery,
-    policy: new DenyAllClusterEndpointCall(),
+    policy: new ExamplePermissionPolicy(),
     identity: env.identity,
   });
 }
