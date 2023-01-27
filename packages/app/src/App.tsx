@@ -107,6 +107,7 @@ import { catalogEntityCreatePermission } from '@backstage/plugin-catalog-common'
 import { PlaylistIndexPage } from '@backstage/plugin-playlist';
 import { TwoColumnLayout } from './components/scaffolder/customScaffolderLayouts';
 import { ScoreBoardPage } from '@oriflame/backstage-plugin-score-card';
+import { ProxyDemoPage } from '@backstage/plugin-proxy-demo';
 
 const app = createApp({
   apis,
@@ -276,6 +277,7 @@ const routes = (
     <Route path="/apache-airflow" element={<ApacheAirflowPage />} />
     <Route path="/playlist" element={<PlaylistIndexPage />} />
     <Route path="/score-board" element={<ScoreBoardPage />} />
+    <Route path="/proxy-demo" element={<ProxyDemoPage />} />
   </FlatRoutes>
 );
 

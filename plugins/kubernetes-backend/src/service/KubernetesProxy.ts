@@ -23,7 +23,11 @@ import {
 } from '@backstage/errors';
 import { bufferFromFileOrString } from '@kubernetes/client-node';
 import type { Request, RequestHandler } from 'express';
-import { createProxyMiddleware } from 'http-proxy-middleware';
+import {
+  createProxyMiddleware,
+  fixRequestBody,
+  responseInterceptor,
+} from 'http-proxy-middleware';
 import { Logger } from 'winston';
 import { ClusterDetails, KubernetesClustersSupplier } from '../types/types';
 
@@ -62,6 +66,7 @@ export class KubernetesProxy {
   private async getMiddleware(originalReq: Request): Promise<RequestHandler> {
     const originalCluster = await this.getClusterForRequest(originalReq);
     let middleware = this.middlewareForClusterName.get(originalCluster.name);
+    // console.log(middleware);
     if (!middleware) {
       // Probably too risky without permissions protecting this endpoint
       // if (cluster.serviceAccountToken) {
@@ -86,6 +91,26 @@ export class KubernetesProxy {
           };
         },
         pathRewrite: { [`^${originalReq.baseUrl}`]: '' },
+        selfHandleResponse: true,
+        // onProxyRes: (proxyRes, req, res) => {
+        //   logger.info(JSON.stringify(proxyRes.headers));
+        // },
+        onProxyReq: fixRequestBody,
+        onProxyRes: responseInterceptor(
+          async (responseBuffer, proxyRes, req, res) => {
+            const response = responseBuffer.toString('utf8');
+            // logger.info(response);
+            return responseBuffer;
+          },
+        ),
+        // on: {
+        //   proxyRes: responseInterceptor(async (responseBuffer, proxyRes, req, res) => {
+        //     res.statusCode = 418; // set different response status code
+
+        //     const response = responseBuffer.toString('utf8');
+        //     return response.replace('Hello', 'Teapot');
+        //   }),
+        // },
         onError: (error, req, res) => {
           const wrappedError = new ForwardedError(
             `Cluster '${originalCluster.name}' request error`,
@@ -108,7 +133,6 @@ export class KubernetesProxy {
 
       this.middlewareForClusterName.set(originalCluster.name, middleware);
     }
-
     return middleware;
   }
 

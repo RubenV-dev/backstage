@@ -30,6 +30,7 @@ import MoneyIcon from '@material-ui/icons/MonetizationOn';
 import LogoFull from './LogoFull';
 import LogoIcon from './LogoIcon';
 import { GraphiQLIcon } from '@backstage/plugin-graphiql';
+import BugReportIcon from '@material-ui/icons/BugReport';
 import {
   Settings as SidebarSettings,
   UserSettingsSignInAvatar,
@@ -152,6 +153,7 @@ export const Root = ({ children }: PropsWithChildren<{}>) => (
         <SidebarItem icon={LibraryBooks} to="docs" text="Docs" />
         <SidebarItem icon={PlaylistPlayIcon} to="playlist" text="Playlists" />
         <SidebarItem icon={LayersIcon} to="explore" text="Explore" />
+        <SidebarItem icon={BugReportIcon} to="proxy-demo" text="Proxy-Demo" />
         <SidebarItem icon={CreateComponentIcon} to="create" text="Create..." />
         {/* End global nav */}
         <SidebarDivider />
