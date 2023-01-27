@@ -28,11 +28,6 @@ import {
 import { ExampleFetchClusters } from '../ExampleFetchComponent';
 import { FormDemo } from '../ExampleComponent/ExampleForm';
 
-const getClusters = () => {
-  const clusters = ['cluster1', 'cluster2'];
-  return clusters;
-};
-
 // const onFormSubmit: FormEventHandler = e => {
 //   e.preventDefault();
 //   console.log('What is going on, im hit');

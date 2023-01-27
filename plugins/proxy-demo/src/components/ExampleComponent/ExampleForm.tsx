@@ -34,6 +34,7 @@ export const FormDemo = () => {
   const googleAuthApi = useApi(googleAuthApiRef);
 
   const onSubmit = async (data: any) => {
+    // console.log(data);
     const token = await googleAuthApi.getAccessToken(
       'https://www.googleapis.com/auth/cloud-platform',
     );
@@ -60,39 +61,6 @@ export const FormDemo = () => {
     const results = await response.json();
     return results;
   };
-
-  // const { value, loading, error } = useAsync(async () => {
-  //   const token = await googleAuthApi.getAccessToken(
-  //     'https://www.googleapis.com/auth/cloud-platform',
-  //   );
-
-  //   const response = await fetch(
-  //     `http://localhost:7007/api/kubernetes/proxy/api/v1/namespaces`,
-  //     {
-  //       method: 'POST',
-  //       headers: {
-  //         'X-Kubernetes-Cluster': clusterName,
-  //         Authorization: `Bearer ${token}`,
-  //       },
-  //       body: JSON.stringify({
-  //         "apiVersion": "v1",
-  //         "kind": "Namespace",
-  //         "metadata": {
-  //         "name": `${namespaceName}`,
-  //       },),
-  //     },
-  //   );
-
-  //   const data = await response.json();
-  //   console.log(DataTransfer);
-  //   return data;
-  // }, []);
-
-  // if (loading) {
-  //   return <Progress />;
-  // } else if (error) {
-  //   return <Alert severity="error">{error.message}</Alert>;
-  // }
 
   return (
     <form>

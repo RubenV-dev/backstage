@@ -99,18 +99,10 @@ export class KubernetesProxy {
         onProxyRes: responseInterceptor(
           async (responseBuffer, proxyRes, req, res) => {
             const response = responseBuffer.toString('utf8');
-            // logger.info(response);
+            logger.info(response);
             return responseBuffer;
           },
         ),
-        // on: {
-        //   proxyRes: responseInterceptor(async (responseBuffer, proxyRes, req, res) => {
-        //     res.statusCode = 418; // set different response status code
-
-        //     const response = responseBuffer.toString('utf8');
-        //     return response.replace('Hello', 'Teapot');
-        //   }),
-        // },
         onError: (error, req, res) => {
           const wrappedError = new ForwardedError(
             `Cluster '${originalCluster.name}' request error`,

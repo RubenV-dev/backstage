@@ -20,7 +20,7 @@ import useAsync from 'react-use/lib/useAsync';
 import { Progress } from '@backstage/core-components';
 import Alert from '@material-ui/lab/Alert';
 
-export const FormInputDropdown = ({ name, control }) => {
+export const FormInputDropdown = ({ name, control, label }) => {
   const { value, loading, error } = useAsync(async () => {
     const response = await fetch(
       'http://localhost:7007/api/kubernetes/clusters',
@@ -32,7 +32,7 @@ export const FormInputDropdown = ({ name, control }) => {
   const generateSelectOptions = () => {
     return value.map((clusters, index) => {
       return (
-        <MenuItem key={index + 1} value={name}>
+        <MenuItem key={index + 1} value={clusters.name}>
           {clusters.name}
         </MenuItem>
       );
