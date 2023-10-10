@@ -25,6 +25,19 @@ import {
   TokenSet,
   Strategy as OidcStrategy,
 } from 'openid-client';
+import { randomBytes, createHash } from 'crypto';
+
+function generatePKCEPair() {
+  const NUM_OF_BYTES = 22; // Total of 44 characters (1 Bytes = 2 char) (standard states that: 43 chars <= verifier <= 128 chars)
+  const HASH_ALG = 'sha256';
+  const randomVerifier = randomBytes(NUM_OF_BYTES).toString('hex');
+  const hash = createHash(HASH_ALG).update(randomVerifier).digest('base64');
+  const challenge = hash
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, ''); // Clean base64 to make it URL safe
+  return { verifier: randomVerifier, challenge };
+}
 
 const rfc8693TokenExchange = async ({
   subject_token,
@@ -62,32 +75,70 @@ export const pinnipedAuthenticator = createOAuthAuthenticator({
         'federationDomain',
       )}/.well-known/openid-configuration`,
     );
+    const clientId = config.getString('clientId');
     const client = new issuer.Client({
       access_type: 'offline', // this option must be passed to provider to receive a refresh token
-      client_id: config.getString('clientId'),
+      client_id: clientId,
       client_secret: config.getString('clientSecret'),
       redirect_uris: [callbackUrl],
       response_types: ['code'],
       scope: config.getOptionalString('scope') || '',
       id_token_signed_response_alg: 'ES256',
     });
-    const providerStrategy = new OidcStrategy(
-      {
-        client,
-        passReqToCallback: false,
+    // if we were to remove this entire strategy.... what would replace it???
+    // im guessing probably nothing and we would have to perform all those strategy methods ourselves?
+    // const providerStrategy = new OidcStrategy(
+    //   {
+    //     client,
+    //     passReqToCallback: false,
+    //   },
+    //   (
+    //     tokenset: TokenSet,
+    //     done: PassportDoneCallback<
+    //       { tokenset: TokenSet },
+    //       {
+    //         refreshToken?: string;
+    //       }
+    //     >,
+    //   ) => {
+    //     done(undefined, { tokenset }, {});
+    //   },
+    // );
+    const providerStrategy = {
+      redirect: function (url: any) {
+        console.log(`hello, its a me: ${url}`);
       },
-      (
-        tokenset: TokenSet,
-        done: PassportDoneCallback<
-          { tokenset: TokenSet },
-          {
-            refreshToken?: string;
-          }
-        >,
-      ) => {
-        done(undefined, { tokenset }, {});
+      error: function () {
+        throw new Error('not sure yet');
       },
-    );
+      authenticate: function (req: any, options: any) {
+        if (!req.session) {
+          throw new TypeError('authentication requires session support');
+        }
+        const baseUrl = new URL(
+          `https://pinniped.test/oauth2/authorize?response_type=code`,
+        );
+
+        if (options) {
+          baseUrl.searchParams.append('state', options.state);
+        }
+
+        baseUrl.searchParams.append('client_id', clientId);
+        baseUrl.searchParams.append('redirect_uri', callbackUrl);
+
+        const { verifier, challenge } = generatePKCEPair();
+
+        baseUrl.searchParams.append('code_challenge_method', 'S256');
+        baseUrl.searchParams.append('code_challenge', challenge);
+        baseUrl.searchParams.append('scope', options.scope);
+
+        // how do we make it so this method can manipulate session one level up? in our tests we want manipulate the fake session to know about the verifier???
+        // req.session = {...req.session, ['oidc:pinniped.test']: {code_verifier: verifier} }
+        req.session['oidc:pinniped.test'] = { code_verifier: verifier };
+
+        this.redirect(baseUrl);
+      },
+    };
 
     return { providerStrategy, client };
   },
@@ -107,6 +158,7 @@ export const pinnipedAuthenticator = createOAuthAuthenticator({
     return new Promise((resolve, reject) => {
       const strategy = Object.create(providerStrategy);
       strategy.redirect = (url: string) => {
+        // console.log(url)
         resolve({ url });
       };
       strategy.error = (error: Error) => {

@@ -230,7 +230,7 @@ describe('pinnipedAuthenticator', () => {
       expect(searchParams.get('code_challenge_method')).toBe('S256');
       expect(searchParams.get('code_challenge')).not.toBeNull();
     });
-
+    // proof key of code exchange
     it('stores PKCE verifier in session', async () => {
       await pinnipedAuthenticator.start(startRequest, implementation);
       expect(fakeSession['oidc:pinniped.test'].code_verifier).toBeDefined();
